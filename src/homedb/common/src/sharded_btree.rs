@@ -162,6 +162,7 @@ impl ShardedQueryHandle {
 impl IndexQueryHandle for ShardedQueryHandle {
     fn results(&self) -> &[(DbKey, DbValue)] { &self.results }
     fn has_more(&self) -> bool { self.has_more_impl() }
+    fn into_any_send(self: Box<Self>) -> Box<dyn std::any::Any + Send> { self }
 }
 
 fn to_sharded_query_handle(handle: Box<dyn IndexQueryHandle>) -> Result<ShardedQueryHandle, BtreeError> {

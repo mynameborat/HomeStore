@@ -11,6 +11,7 @@ use super::db_kv::{DbKey, DbValue};
 pub trait IndexQueryHandle: Send + std::any::Any {
     fn results(&self) -> &[(DbKey, DbValue)];
     fn has_more(&self) -> bool;
+    fn into_any_send(self: Box<Self>) -> Box<dyn std::any::Any + Send>;
 }
 
 /// Convert to Box<dyn Any> for downcast in query_next_batch. Requires IndexQueryHandle: Any.
@@ -18,7 +19,7 @@ pub trait IndexQueryHandle: Send + std::any::Any {
 /// may not see both at once — suppress the spurious dead_code lint.
 #[allow(dead_code)]
 pub fn index_query_handle_into_any(me: Box<dyn IndexQueryHandle>) -> Box<dyn std::any::Any + Send> {
-    unsafe { Box::from_raw(Box::into_raw(me) as *mut (dyn std::any::Any + Send)) }
+    me.into_any_send()
 }
 
 #[cfg_attr(feature = "async_frontend", async_trait::async_trait)]
