@@ -144,6 +144,12 @@ impl Table {
         Ok(())
     }
 
+    /// Seek to first key >= given key (convenience method, delegates to primary index)
+    #[maybe_async_cfg::maybe(keep_self, sync(feature = "sync_frontend"), async(feature = "async_frontend"))]
+    pub async fn seek_gte(&self, key: Vec<u8>) -> Result<Option<(Vec<u8>, Vec<u8>)>> {
+        self.primary_index().seek_gte(key).await
+    }
+
     /// Query a range of keys (convenience method, delegates to primary index)
     ///
     /// For better performance, get the index handle and call methods directly:

@@ -425,6 +425,12 @@ impl BtreeIndex for ShardedBtree {
         shard_call!(shard, [key], get(&key))
     }
 
+    async fn seek_gte(&self, key: &DbKey) -> Result<Option<(DbKey, DbValue)>, BtreeError> {
+        let part_key = self.get_part_key(key);
+        let shard = self.shard_from_part_key(&part_key);
+        shard_call!(shard, [key], seek_gte(&key))
+    }
+
     async fn query(
         &self,
         range: BtreeKeyRange<DbKey>,

@@ -93,6 +93,8 @@ impl BtreeIndex for UnshardedBtree {
 
     async fn get(&self, key: &DbKey) -> Result<Option<DbValue>, BtreeError> { self.btree.get(key).await }
 
+    async fn seek_gte(&self, key: &DbKey) -> Result<Option<(DbKey, DbValue)>, BtreeError> { self.btree.seek_gte(key).await }
+
     async fn query(
         &self,
         range: BtreeKeyRange<DbKey>,

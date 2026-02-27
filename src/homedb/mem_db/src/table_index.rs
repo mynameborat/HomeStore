@@ -144,6 +144,16 @@ impl TableIndex {
         Ok(result.map(|v| v.into_vec()))
     }
 
+    /// Seek to first key >= given key. More efficient than get_any() for point lookups.
+    #[maybe_async_cfg::maybe(keep_self, sync(feature = "sync_frontend"), async(feature = "async_frontend"))]
+    pub async fn seek_gte(&self, key: Vec<u8>) -> Result<Option<(Vec<u8>, Vec<u8>)>> {
+        self.spec.key_spec.validate_key(&key)?;
+        let db_key = DbKey::new(key, &self.spec.key_spec);
+        let result = self.btree.seek_gte(&db_key).await
+            .map_err(|e| HomeDbError::BtreeError(format!("{:?}", e)))?;
+        Ok(result.map(|(k, v)| (k.into_vec(), v.into_vec())))
+    }
+
     /// Query a range of key-value pairs, returning a batch iterator.
     #[maybe_async_cfg::maybe(keep_self, sync(feature = "sync_frontend"), async(feature = "async_frontend"))]
     pub async fn get_range(

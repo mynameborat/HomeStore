@@ -44,6 +44,11 @@ pub trait BtreeIndex: Send + Sync {
 
     async fn get(&self, key: &DbKey) -> Result<Option<DbValue>, BtreeError>;
 
+    /// Seek to first key >= given key. More efficient than get_any() for single-key
+    /// lookups: uses one binary search per node instead of two, returns directly
+    /// without QueryResultHandle overhead.
+    async fn seek_gte(&self, key: &DbKey) -> Result<Option<(DbKey, DbValue)>, BtreeError>;
+
     /// Range query; reverse = true uses reverse order. Internally uses query_traversal.
     async fn query(
         &self,

@@ -414,6 +414,29 @@ where
         result
     }
 
+    /// Seek to first key >= given key (single binary search per node)
+    ///
+    /// More efficient than get_any() for point lookups where you need the first entry
+    /// at or after a key, because it uses find() (one binary search per node) instead
+    /// of match_range() (two binary searches per node) and returns directly without
+    /// a QueryResultHandle.
+    ///
+    /// Returns:
+    /// - Some((key, value)) if any key >= search key exists
+    /// - None if no key >= search key exists
+    #[tracing::instrument(skip(self, key),
+                          fields(op_id=op_counter(), btree=%self.config.btree_name, key=?key))]
+    pub async fn seek_gte(&self, key: &K) -> Result<Option<(K, V)>, BtreeError> {
+        tracing::debug!("Starting seek_gte operation");
+        let result = self.seek_gte_internal(key).await;
+        match &result {
+            Ok(Some((k, _))) => tracing::debug!(found_key = ?k, "Found key >= search key"),
+            Ok(None) => tracing::debug!("No key >= search key"),
+            Err(_) => tracing::warn!("seek_gte failed"),
+        }
+        result
+    }
+
     /// Sweep query - returns multiple key-value pairs in range
     ///
     ///
