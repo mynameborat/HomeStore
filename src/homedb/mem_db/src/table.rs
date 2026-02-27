@@ -127,6 +127,13 @@ impl Table {
     #[maybe_async_cfg::maybe(keep_self, sync(feature = "sync_frontend"), async(feature = "async_frontend"))]
     pub async fn remove(&self, key: Vec<u8>) -> Result<Option<Vec<u8>>> { self.primary_index().remove(key).await }
 
+    /// Remove all keys in the range [start_key, end_key) (uses primary index).
+    /// Returns the number of keys removed.
+    #[maybe_async_cfg::maybe(keep_self, sync(feature = "sync_frontend"), async(feature = "async_frontend"))]
+    pub async fn remove_range(&self, start_key: Vec<u8>, end_key: Vec<u8>) -> Result<u32> {
+        self.primary_index().remove_range(start_key, end_key).await
+    }
+
     /// Put multiple key-value pairs (uses primary index)
     #[maybe_async_cfg::maybe(keep_self, sync(feature = "sync_frontend"), async(feature = "async_frontend"))]
     pub async fn put_range(&self, kvs: Vec<(Vec<u8>, Vec<u8>)>) -> Result<()> {

@@ -208,6 +208,7 @@ where
 
         let mut removed = 0u32;
         let mut idx = start_idx;
+        let mut end_idx = end_idx;
 
         // Iterate through range entries
         while idx <= end_idx && removed < max_count {
@@ -225,7 +226,13 @@ where
                     // Remove the entry from the node
                     node.remove::<K, V>(idx)?;
                     removed += 1;
-                    // Don't increment idx - entries shift down after removal
+                    // Don't increment idx - entries shift down after removal.
+                    // Decrement end_idx to track the shifted boundary.
+                    // When end_idx hits 0, all matching entries have been processed.
+                    if end_idx == 0 {
+                        break;
+                    }
+                    end_idx -= 1;
                 }
                 RemoveFilterDecision::Skip => {
                     idx += 1; // Skip this entry

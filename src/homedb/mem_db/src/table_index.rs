@@ -214,6 +214,22 @@ impl TableIndex {
         Ok(handle.results().first().map(|(k, v)| (k.clone().into_vec(), v.clone().into_vec())))
     }
 
+    /// Remove all keys in the given range [start_key, end_key).
+    /// Returns the number of keys removed.
+    #[maybe_async_cfg::maybe(keep_self, sync(feature = "sync_frontend"), async(feature = "async_frontend"))]
+    pub async fn remove_range(&self, start_key: Vec<u8>, end_key: Vec<u8>) -> Result<u32> {
+        use homestore::index::btree::detail::btree_req::BtreeKeyRange;
+
+        self.spec.key_spec.validate_key(&start_key)?;
+        self.spec.key_spec.validate_key(&end_key)?;
+        let start = DbKey::new(start_key, &self.spec.key_spec);
+        let end = DbKey::new(end_key, &self.spec.key_spec);
+        self.btree
+            .remove_range(BtreeKeyRange::new(start, true, end, false), None)
+            .await
+            .map_err(|e| HomeDbError::BtreeError(format!("{:?}", e)))
+    }
+
     /// Remove any key in the given range. Returns the removed key-value pair if found.
     #[maybe_async_cfg::maybe(keep_self, sync(feature = "sync_frontend"), async(feature = "async_frontend"))]
     pub async fn remove_any(&self, start_key: Vec<u8>, end_key: Vec<u8>) -> Result<Option<(Vec<u8>, Vec<u8>)>> {
