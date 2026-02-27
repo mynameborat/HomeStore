@@ -13,6 +13,7 @@ pub struct RangeIterator {
     index: Arc<dyn BtreeIndex>,
     handle: Option<Box<dyn IndexQueryHandle>>,
     current_batch: Vec<(DbKey, DbValue)>,
+    cursor: usize,
     start_key: Vec<u8>,
     end_key: Vec<u8>,
     batch_size: u32,
@@ -39,6 +40,7 @@ impl RangeIterator {
             index,
             handle: if has_more { Some(handle) } else { None },
             current_batch: results,
+            cursor: 0,
             start_key,
             end_key,
             batch_size,
@@ -50,10 +52,16 @@ impl RangeIterator {
     #[maybe_async_cfg::maybe(keep_self, sync(feature = "sync_frontend"), async(feature = "async_frontend"))]
     pub async fn next(&mut self) -> Result<Option<(Vec<u8>, Vec<u8>)>> {
         loop {
-            if !self.current_batch.is_empty() {
-                let (key, value) = self.current_batch.remove(0);
-                return Ok(Some((key.into_vec(), value.into_vec())));
+            if self.cursor < self.current_batch.len() {
+                let (key, value) = &self.current_batch[self.cursor];
+                let result = (key.clone().into_vec(), value.clone().into_vec());
+                self.cursor += 1;
+                return Ok(Some(result));
             }
+
+            // Batch exhausted — drop it and fetch the next one.
+            self.current_batch.clear();
+            self.cursor = 0;
 
             match self.handle.take() {
                 Some(h) if h.has_more() => {
@@ -83,6 +91,7 @@ impl RangeIterator {
     pub async fn seek(&mut self, key: &[u8]) -> Result<bool> {
         self.handle = None;
         self.current_batch.clear();
+        self.cursor = 0;
 
         let (range_start, range_end) = if self.reverse {
             (DbKey::new(self.start_key.clone(), &self.key_spec), DbKey::new(key.to_vec(), &self.key_spec))

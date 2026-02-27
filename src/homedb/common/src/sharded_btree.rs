@@ -434,7 +434,13 @@ impl BtreeIndex for ShardedBtree {
     ) -> Result<Box<dyn IndexQueryHandle>, BtreeError> {
         let start_part = self.get_part_key(&range.start_key);
         let end_part = self.get_part_key(&range.end_key);
-        let partitions = self.active_partitions_in_range(&start_part, &end_part);
+        let mut partitions = self.active_partitions_in_range(&start_part, &end_part);
+
+        // For reverse queries, visit partitions in descending order so that
+        // higher keys are returned before lower keys across partition boundaries.
+        if reverse {
+            partitions.reverse();
+        }
 
         let mut handle = ShardedQueryHandle {
             results: Vec::new(), input_range: range, batch_size, filter, reverse,
