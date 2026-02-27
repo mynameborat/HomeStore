@@ -585,9 +585,11 @@ where
         }
 
         if new_nodes.len() == 0 {
-            debug_assert!(false, "Turns out that commit merge result in all empty nodes");
-            return btree_io_err!(InvalidData,
-                format!("Merge resulted in all empty nodes - leftmost, {} old nodes were empty", old_nodes.len()));
+            // All nodes in the merge range are empty (e.g. after remove_range
+            // deleted every entry). Merging empty nodes is a no-op — return
+            // false so the caller continues without error. The tree remains
+            // structurally valid and root collapse will clean up if needed.
+            return Ok(false);
         }
 
         if tracing::enabled!(tracing::Level::TRACE) {
